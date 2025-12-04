@@ -1,0 +1,33 @@
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+.DS_Store
+
+python_modules
+
+lib/.env.yaml
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.sample.json
+
+.env
+
+# for docs
+!api/docs/separate.js
+
+img/
+shop/
+memo/
+.venv/
+
+richmenu/__pycache__/
+richmenu/*.csv
+richmenu/*.jpeg
+richmenu/*.jpg

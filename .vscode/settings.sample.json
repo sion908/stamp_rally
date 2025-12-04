@@ -1,0 +1,51 @@
+{
+    "python.autoComplete.extraPaths": [
+        "api/python_modules/local/lib/python3.10/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "api/.venv/lib/python3.10/site-packages",
+        "api/src"
+    ],
+    "flake8.path": ["api/.venv/bin/pflake8"],
+    "flake8.args": [
+        "api/src/",
+        "--max-line-length=88",
+        "--ignore=E203,E402,E266,W503,B008",
+        "--max-complexity=10",
+        "--max-expression-complexity=7",
+        "--max-cognitive-complexity=7"
+    ],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/__pycache__": true,
+        "node_modules":true,
+        "python_modules":true,
+        "api/.venv/": true,
+        "api/.pytest_cache/": true,
+        "api/python_modules/": true
+    },
+    "rest-client.environmentVariables": {
+        "$shared": {
+            "user": "user",
+            "pass": "pass"
+        },
+        "local": {
+            "base_url": "http://127.0.0.1:80",
+            "user": "user",
+            "pass": "pass"
+        },
+        "local_sam": {
+            "base_url": " http://127.0.0.1:3000",
+            "user": "user",
+            "pass": "pass"
+        },
+        "dev": {
+            "host": "https://sample.amazonaws.com/dev/"
+        }
+    }
+}

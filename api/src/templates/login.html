@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <style>
+      .fsize{
+        font-size: 24px;
+        text-align: center;
+      }
+
+      .container {
+        width: 300px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 93%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #45a049;
+      }
+    </style>
+</head>
+<body>
+  <div class="container">
+    <div id="login">
+      <form name="loginForm">
+        <p class="fsize">ログイン画面</p>
+        <input type="text" name="username" id="username" placeholder="Username" required/>
+        <input type="password" name="password" id="password" placeholder="Password" required/>
+        <input type='hidden' name='csrf-token' id="csrfToken" value="{{ csrf_token }}"/>
+        <button type="button" onclick="submitForm();">ログイン</button>
+      </form>
+    </div>
+    <div id="transition" hidden>
+      <button type="button" class="btn btn-primary btn-lg" onclick="goNextpage('{{ base_url }}admin/scores/');">スコア一覧</button>
+      <button type="button" class="btn btn-primary btn-lg" onclick="goNextpage('{{ base_url }}places/');">場所一覧</button>
+    </div>
+
+  </div>
+  <script>
+    function submitForm() {
+
+        var csrfToken = document.getElementById('csrfToken').value;
+        var username = document.getElementById('username').value;
+        var password = document.getElementById('password').value;
+
+        var data = {
+          "csrfToken": csrfToken,
+          "username": username,
+          "password": password
+        };
+        console.log(data)
+
+        fetch('', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.access_token) {
+                document.cookie = `access_token=${data.access_token}; path=/`;
+                document.cookie = `refresh_token=${data.refresh_token}; path=/`;
+                this.access_token=data.access_token;
+                // alert('Login successful!');
+                // リダイレクトやその他の処理を行う
+                // getScoreTable();
+                localStorage.setItem('access_token', data.access_token);
+                document.getElementById("login").hidden = true;
+                document.getElementById("transition").hidden = false;
+            } else {
+                alert('Login failed. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    // クエリパラメータを取得する関数
+    function getQueryParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const query_param = urlParams.get(name);
+      if (query_param) {
+        document.getElementById(name).value = query_param;
+        return query_param
+      }
+    }
+
+    // クエリパラメータからユーザー名とパスワードを取得
+    const username = getQueryParam('username');
+    const password = getQueryParam('password');
+    function goNextpage(page){
+      window.location.href = page;
+      return
+      const accessToken = localStorage.getItem('access_token');
+      fetch(page, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }).then(
+        res => {
+
+        }
+      ).then(
+        data => {
+        //  window.location.href = page;
+        }
+      ).catch(error => {
+        console.error('Error:', error);
+      });
+    }
+    window.onload=()=>{
+      if(username && password) {
+        submitForm()
+      }
+    }
+</script>
+</body>
+</html>

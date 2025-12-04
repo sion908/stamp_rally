@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "ms-python.flake8",
+        "humao.rest-client"
+    ]
+}

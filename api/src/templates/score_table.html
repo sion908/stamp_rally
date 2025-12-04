@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー一覧</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    {% include 'css/popup.html' %}
+    <style>
+      .fsize{
+        font-size: 24px;
+        text-align: center;
+      }
+
+      .container {
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 93%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #45a049;
+      }
+      button[type="button"] {
+        margin: 0.5rem;
+      }
+    </style>
+    {% include 'js/generateQR.html' %}
+</head>
+<body>
+  <div class="container">
+    <div id="transition">
+      <button type="button" class="btn btn-primary btn-lg" onclick="goNextpage('{{ base_url }}places/');">場所一覧</button>
+    </div>
+<div id="score-table">
+  <table class="table table-hover" id="scoreTable">
+    <thead>
+      <tr style="text-align: center;">
+        <th scope="col">#</th>
+        <th scope="col">チーム名</th>
+        <th scope="col">score</th>
+        <th scope="col">減点前</th>
+        <th scope="col">({{ end_time }})<br>到着時刻</th>
+        <th scope="col" style="display: none;">実際の到着時刻</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for card in cards %}
+      <tr>
+        <th scope="row">{{ loop.index }}</th>
+        <td>{{card.name}}</td>
+        <td style="text-align: right;">{{card.score_added}}</td>
+        <td style="text-align: right;">{{card.score}}</td>
+        <td style="text-align: right;">{{card.time_app}}</td>
+        <td style="display: none;">{{card.time}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+<div id="popup">
+  <button type="button" class="btn-close" aria-label="Close" style="float: right;" onclick="document.getElementById('popup').style.display='none';"></button>
+  <div id="popup-body">
+    <input type="text" name="team-name" id="input-team-name">
+    <button type="button" class="btn btn-primary btn-lg" onclick="generateTeamQR();">QRを生成する</button>
+    <div id="teamqrcode"></div>
+
+    <button type="button" id="btn-back" class="1a 2s" hidden>戻る</button>
+
+  </div>
+</div>
+<div id="downloadCSV" style="text-align: right;">
+  <button type="button" class="btn btn-primary btn-lg" onclick="downloadCSV();">CSVダウンロード</button>
+</div>
+<div id="generateQR" style="text-align: right;">
+  <button type="button" class="btn btn-primary btn-lg" onclick="registTeam();">チーム登録</button>
+</div>
+<script>
+  function goNextpage(page){
+    window.location.href = page;
+    return
+    const accessToken = localStorage.getItem('access_token');
+    fetch(page, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    }).then(
+      res => {
+
+      }
+    ).then(
+      data => {
+      //  window.location.href = page;
+      }
+    ).catch(error => {
+      console.error('Error:', error);
+    });
+  }
+  function registTeam(){
+    document.getElementById('popup').style.display='block';
+  }
+  function generateTeamQR(){
+    const teamName = document.getElementById("input-team-name").value
+    const accessToken = localStorage.getItem('access_token');
+    $.ajax({
+      url: "{{ base_url }}card/card_token/",
+      method: 'POST',
+      data: JSON.stringify({
+        csrfToken: "{{ csrf_token }}",
+        team_name: teamName
+      }),
+      contentType: 'application/json',
+      success: function(response) {
+        // データの保存が成功した場合の処理
+        console.log(response)
+        this.res=response
+        const token_url = `https://liff.line.me/{{ liff_id }}/?ver=logeining&card_token=${response.cardToken}`;
+        createQRCodeElement(token_url, teamName, document.getElementById("teamqrcode"))
+        // QRCode.toDataURL(token_url)
+        //   .then((url) => {
+        //     console.log(url)
+        //     createQRCodeElement(`https://liff.line.me/{{ liff_id }}/?ver=logeining&card_token=${response.cardToken}`, teamName, document.getElementById("teamqrcode"))
+        //     // document.getElementById("teamqrcode").src = url;
+        //   })
+        //   .catch((err) => {
+        //     console.error(err);
+        //   });
+        // const qrCodeOptions = {
+        //   width: 200,
+        //   height: 200,
+        //   colorDark : "#000000",
+        //   colorLight : "#ffffff"
+        // };
+        // new QRCode(document.getElementById("qrcode"), {
+        //   text: `https://liff.line.me/{{ liff_id }}/?ver=logeining&team_token=${response.token}`,
+        //   ...qrCodeOptions
+        // });
+        // alert('データが保存されました。'+response.cardToken);
+      },
+      error: function(xhr, status, error) {
+        // エラーハンドリング
+        console.error(error);
+        alert('データの保存中にエラーが発生しました。');
+      }
+    });
+  }
+</script>
+<script>
+  function downloadCSV() {
+    // 表の要素を取得
+    var table = document.getElementById("scoreTable");
+
+    // CSVデータを格納する変数
+    var csv = [];
+
+    // 表の各行を取得
+    var rows = table.getElementsByTagName("tr");
+
+    // 各行のデータを取得してCSVデータに変換
+    for (var i = 0; i < rows.length; i++) {
+      var row = [];
+      var cols = rows[i].querySelectorAll("td, th");
+
+      for (var j = 0; j < cols.length; j++) {
+        var cellData = cols[j].innerText.replace(/<br>/g, " ");
+        row.push(cellData);
+      }
+
+      csv.push(row.join(","));
+    }
+
+    // CSVデータを結合して一つの文字列にする
+    var csvString = csv.join("\n");
+
+    // CSVファイル名を指定
+    var filename = "data.csv";
+
+    // CSVデータをBlobオブジェクトに変換
+    var blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+
+    // ダウンロードリンクを作成
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+
+    // ダウンロードリンクをクリックしてダウンロードを開始
+    link.click();
+  }
+  </script>
+</body>
+</html>

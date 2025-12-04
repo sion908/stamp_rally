@@ -1,0 +1,44 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    -   id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+-   repo: local
+    hooks:
+    -   id: isort
+        name: isort-docker-compose
+        description: "ライブラリの並べ替え"
+        entry: docker-compose -f api/docker/docker-compose.yaml exec -T app ./run.sh isort
+        files: api/src/
+        types: [python]
+        language: python
+    -   id: pflake8
+        name: pflake8-docker-compose
+        description: "pepに対応するためのlinter"
+        entry: docker-compose -f api/docker/docker-compose.yaml exec -T app ./run.sh pflake8
+        files: api/src/
+        exclude: src/database/migrations/versions/
+        types: [python]
+        language: python
+    # -   id: pytest
+    #     name: pytest-docker-compose
+    #     description: "pytestの実行"
+    #     entry: docker-compose -f api/docker/docker-compose.yaml exec -T app poetry run -v -s pytest
+    #     files: "api/src/"
+    #     types: [python]
+    #     pass_filenames: false
+    #     language: python
+    -   id: swagger
+        name: generate-openapi-file
+        description: "openAPIが生成されているかの確認"
+        entry: ./run.sh server openapi
+        files: "api/src/"
+        types: [python]
+        pass_filenames: false
+        language: python

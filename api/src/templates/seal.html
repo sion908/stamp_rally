@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}長崎 まちぶら ロゲイニング{% endblock %}
+{% block header_title %}長崎 まちぶら ロゲイニング{% endblock header_title %}
+{% block head %}
+  {{ super() }}
+
+  {% if is_local %}
+  <script>
+  window.onload=()=>{
+  this.accessToken="accessToken";
+  {% if place %}
+    const place_id = '{{ place.id }}';
+    mkload();
+    confQR(place_id)
+  {% else %}
+    startScan()
+  {% endif %}
+  }
+  </script>
+  {% endif %}
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  {% include 'css/popup.html' %}
+  {% include 'css/liff_employ.html' %}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+{% block afinitliff %}
+  this.accessToken = liff.getAccessToken();
+  console.log(this.accessToken);
+  const formElements = document.forms.stampForm;
+  formElements.lineToken.value=this.accessToken;
+  {% if place %}
+    const place_id = '{{ place.id }}';
+    mkload();
+    confQR(place_id)
+  {% else %}
+    startScan()
+  {% endif %}
+{% endblock %}
+{% block content %}
+  <div class="status"></div>
+
+  <div id="loadingMessage">🎥 Unable to access video stream (please make sure you have a webcam enabled)</div>
+  <div id="QR-area" hidden>
+    <canvas id="canvas"></canvas>
+    <div>QRコード読み取る</div>
+  </div>
+  <div id="loading" style="width:40%;margin: 0 auto;" class="loading"></div>
+  <div id="popup">
+    <input class="batsu" value="x" type="button">
+    <div id="popup-body">
+      <div id="description">
+        {% if place %}
+            <p class="placeName">{{ place.name }}</p>
+        {% else %}
+            <p class="placeName"></p>
+        {% endif %}
+            <div id="stamp_result"><p><span id="stamp_num"></span>こ目</p></div>
+        <a href="https://twitter.com/intent/tweet?hashtags=ロゲイニング,長崎" target="_blank" class="tweet-button" id="tweet-button">
+          <i class="fab fa-twitter"></i> X(Twitter)に投稿
+        </a>
+      </div>
+
+      <form name="stampForm" action="" method="POST">
+        <input type="hidden" name="lineToken">
+        {% if place %}
+            <input type="hidden" name="place_id" value="{{ place.id }}">
+        {% else %}
+            <input type="hidden" name="place_id" value="">
+        {% endif %}
+        <input type="hidden" name="card_token" value="">
+        <input type='hidden' name='csrfToken' value="{{ csrf_token }}"/>
+      </form>
+
+      <button type="button" id="btn-back" class="1a 2s" hidden>戻る</button>
+
+    </div>
+  </div>
+
+
+  {# <script src="{{ static('js/stamp/stamp.js') }}"></script> #}
+  {# <script src="{{ static('js/loading.js') }}"></script> #}
+  {% include "js/stamp.html" %}
+  {% include "js/loading.html" %}
+  <script>
+    generateReg(liff_id="{{ liff_id }}", ver="logeining")
+    this.base_url="{{ base_url }}"
+  </script>
+{% endblock %}

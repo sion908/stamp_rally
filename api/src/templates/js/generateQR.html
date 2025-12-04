@@ -1,0 +1,179 @@
+
+<script>
+  function generateText(sym,num){
+    let title = "";
+    for(let i=0;i<num;i++){
+      title+=sym;
+    }
+    return title
+  }
+  function getTableData(tableId, baseUrl) {
+    const table = document.getElementById(tableId);
+
+    const rows = table.querySelectorAll('tbody tr');
+    const data = Array.from(rows).map(row => {
+      const cells = row.querySelectorAll('td');
+
+      return {
+        "url": baseUrl+cells[0].textContent.trim(),
+        "score": cells[3].textContent.trim(),
+        "name": cells[1].textContent.trim()
+      }
+    });
+
+    return data;
+  }
+  async function createQRCodeElement(url, placeTitle, qrContainer, score) {
+    const qrdiv = document.createElement('div');
+    qrdiv.className = "qr";
+    const canvas = document.createElement('canvas');
+    canvas.className = "qr-canvas";
+    qrdiv.appendChild(canvas)
+    const ctx = canvas.getContext('2d');
+
+    const { qrImage, centerImage } = await loadImages(url);
+
+    // キャンバスのサイズを背景画像に合わせる
+    canvas.width = qrImage.width/30*38;
+    canvas.height = qrImage.height/30*38;
+
+    ctx.strokeStyle = "white";          // 輪郭の色
+    ctx.lineWidth = qrImage.width/30*10;               // 輪郭の太さ
+    ctx.strokeRect(0, 0, qrImage.width/30*38, qrImage.width/30*38);  // 描画
+
+    // 中心の画像のサイズと位置
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const imageClipRadius = 75;
+
+    // 背景画像を描画
+    ctx.drawImage(qrImage, centerX - qrImage.width/2, centerY - qrImage.height/2, qrImage.width, qrImage.height);
+
+
+    ctx.save(); // クリッピングの前に現在の状態を保存
+    // 中心の画像を円形にトリムして描画
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, imageClipRadius, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.drawImage(centerImage, centerX - imageClipRadius, centerY - imageClipRadius, imageClipRadius*2, imageClipRadius*2);
+
+    ctx.restore(); // クリッピングを解除
+
+    // 中心の画像の周りに線を描画
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, imageClipRadius, 0, Math.PI * 2, true);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#000'; // 線の色を指定
+    ctx.stroke(); // 線を描画
+
+    // 中心の画像の周りに白線を描画
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, imageClipRadius + 11, 0, Math.PI * 2, true);
+    ctx.strokeStyle = '#fff'; // 線の色を指定
+    ctx.lineWidth = 22;
+    ctx.stroke(); // 線を描画
+
+    // 中心の画像の周りに線を描画
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, imageClipRadius + 22, 0, Math.PI * 2, true);
+    ctx.strokeStyle = '#000'; // 線の色を指定
+    ctx.lineWidth = 2;
+    ctx.stroke(); // 線を描画
+
+    if(placeTitle){
+        // 文字列を円形に配置
+        const text = placeTitle.length > 15 ? placeTitle : placeTitle+generateText(" ",placeTitle.length);
+
+        const textRadius = 80; // 文字を配置する円の半径
+        ctx.save(); // 文字描画の変形の前に状態を保存
+        ctx.translate(canvas.width / 2, canvas.height / 2); // 円の中心に原点を移動
+        ctx.font = '16px serif';
+        ctx.rotate(-1 * Math.PI / 2); // 文字の開始点を上部にする
+
+        let divRotete = 0;
+        if (text.length%2==0){
+            divRotete = 2 * Math.PI / text.length / 2;
+        }
+        for (let i = 0; i < text.length; i++) {
+        ctx.save();
+        ctx.rotate(2 * Math.PI / text.length * i + divRotete);
+        ctx.fillText(text[i], 0, -textRadius);
+        ctx.restore();
+        }
+        ctx.restore(); // 文字描画の変形を解除
+    }
+    qrContainer.appendChild(qrdiv)
+    const imgBlob = await new Promise(resolve => canvas.toBlob(resolve));
+
+    const imgUrl = URL.createObjectURL(imgBlob);
+    const img = document.createElement("img");
+    img.src = imgUrl;
+    img.className = "qrImg";
+    qrdiv.appendChild(img);
+    qrdiv.removeChild(canvas);
+
+    const qrTitle = document.createElement('p');
+    qrTitle.className = 'qrTitle';
+    qrTitle.textContent = `${score? '['+score+']': ""}${placeTitle}`;
+    qrdiv.appendChild(qrTitle);
+
+    return imgBlob
+  };
+
+  async function loadImages(qrText) {
+    const qrImage = new Image(500, 500);
+    qrImage.crossOrigin="anonymous";
+    const qrImagePromise = new Promise(r => qrImage.onload = r);
+    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?ecc=Q&size=${qrImage.width}x${qrImage.height}&data=${encodeURIComponent(qrText)}`;
+
+    const centerImage = new Image(300, 300);
+    centerImage.crossOrigin="anonymous";
+    const centerImagePromise = new Promise(r => centerImage.onload = r);
+    centerImage.src = 'https://res.cloudinary.com/djutwrn9m/image/upload/v1715557009/438245601_1085015636117616_1002866923958970518_n_dchopv.png';
+
+    await Promise.all([qrImagePromise, centerImagePromise]);
+    return {
+      qrImage,
+      centerImage,
+    };
+  }
+  async function generateQRs(datas) {
+    const zip = new JSZip();
+    const codeContainer = document.getElementsByClassName("QRcode")[0]
+    for (let i = 0; i < datas.length; i++) {
+      const data = datas[i];
+      const qrblob = await createQRCodeElement(data["url"],data["name"], codeContainer);
+
+      zip.file(`[${data["score"]}]${data["name"]}.png`, qrblob);
+      // document.body.removeChild(qrCodeElement);
+    }
+    return zip.generateAsync({ type: 'blob' });
+  }
+
+  async function downloadZip(content) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = 'qrcodes.zip';
+    link.click();
+  }
+
+  // 使用例
+  //generateQRs()
+  //  .then(content => {
+  //    // ここで必要な処理を行う
+  //    // 例えば、生成されたQRコードを表示するなど
+  //
+  //    // ダウンロードボタンを作成
+  //    const downloadButton = document.createElement('button');
+  //    downloadButton.textContent = 'Download ZIP';
+  //    downloadButton.addEventListener('click', () => {
+  //      downloadZip(content);
+  //    });
+  //    document.body.appendChild(downloadButton);
+  //  })
+  //  .catch(error => {
+  //    console.error('QRコードの生成中にエラーが発生しました:', error);
+  //  });
+  </script>

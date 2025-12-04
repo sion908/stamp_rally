@@ -1,0 +1,113 @@
+<body>
+    <main>
+      <button id="create-qr">QR作成</button>
+
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script type="module">
+        const urls = [
+        'https://example.com/url1',
+        'https://example.com/url2',
+        'https://example.com/url3'
+      ];
+      async function createQRCodeElement(qrText) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const { qrImage, centerImage } = await loadImages(qrText);
+
+        // キャンバスのサイズを背景画像に合わせる
+        canvas.width = qrImage.width;
+        canvas.height = qrImage.height;
+
+        // 背景画像を描画
+        ctx.drawImage(qrImage, 0, 0);
+
+        // 中心の画像のサイズと位置
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const imageClipRadius = 75;
+
+        ctx.save(); // クリッピングの前に現在の状態を保存
+        // 中心の画像を円形にトリムして描画
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, imageClipRadius, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.clip();
+
+        ctx.drawImage(centerImage, centerX - imageClipRadius, centerY - imageClipRadius, centerImage.width, centerImage.height);
+
+        ctx.restore(); // クリッピングを解除
+
+        // 中心の画像の周りに線を描画
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, imageClipRadius, 0, Math.PI * 2, true);
+        ctx.strokeStyle = '#000'; // 線の色を指定
+        ctx.stroke(); // 線を描画
+
+        // 中心の画像の周りに白線を描画
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, imageClipRadius + 11, 0, Math.PI * 2, true);
+        ctx.strokeStyle = '#fff'; // 線の色を指定
+        ctx.lineWidth = 20;
+        ctx.stroke(); // 線を描画
+
+        // 文字列を円形に配置
+        const text = 'トーマス・ブレーク・グラバーの像 Thomas Blake Glover Statue';
+        const textRadius = 80; // 文字を配置する円の半径
+        ctx.save(); // 文字描画の変形の前に状態を保存
+        ctx.translate(canvas.width / 2, canvas.height / 2); // 円の中心に原点を移動
+        ctx.font = '16px serif';
+        ctx.rotate(-1 * Math.PI / 2); // 文字の開始点を上部にする
+
+        for (let i = 0; i < text.length; i++) {
+          ctx.save();
+          ctx.rotate(2 * Math.PI / text.length * i);
+          ctx.fillText(text[i], 0, -textRadius);
+          ctx.restore();
+        }
+        ctx.restore(); // 文字描画の変形を解除
+        return canvas
+      };
+
+      document.querySelector('#create-qr').addEventListener('click', () => downloadZip());
+
+      async function loadImages(qrText) {
+        const qrImage = new Image(500, 500);
+        qrImage.crossOrigin="anonymous";
+        const qrImagePromise = new Promise(r => qrImage.onload = r);
+        qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?ecc=Q&size=${qrImage.width}x${qrImage.height}&data=${encodeURIComponent(qrText)}`;
+
+        const centerImage = new Image(150, 150);
+        centerImage.crossOrigin="anonymous";
+        const centerImagePromise = new Promise(r => centerImage.onload = r);
+        centerImage.src = 'https://res.cloudinary.com/djutwrn9m/image/upload/v1682557120/avator_hq5owd.jpg';
+
+        await Promise.all([qrImagePromise, centerImagePromise]);
+        return {
+          qrImage,
+          centerImage,
+        };
+      }
+      async function downloadZip() {
+        const zip = new JSZip();
+
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          console.log(url)
+          const qrCodeElement = await createQRCodeElement(url);
+          document.body.appendChild(qrCodeElement);
+          const blob = await new Promise(resolve => qrCodeElement.toBlob(resolve));
+          zip.file(`qrcode_${i + 1}.png`, blob);
+          document.body.removeChild(qrCodeElement);
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = 'qrcodes.zip';
+        link.click();
+      }
+    </script>
+  </body>

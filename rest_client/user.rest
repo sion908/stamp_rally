@@ -1,0 +1,20 @@
+
+###
+# @name getUser
+@user_id={{createUser.response.body.id}}
+GET {{base_url}}/users/{{user_id}} HTTP/1.1
+Authorization: Basic {{user}}:{{pass}}
+
+###
+# @name createUser
+# @prompt username
+POST {{base_url}}/users/ HTTP/1.1
+Authorization: Basic {{user}}:{{pass}}
+content-type: application/json
+
+{
+	"username":"{{username}}",
+	"password":"password",
+	"sex":2,
+	"age":20
+}

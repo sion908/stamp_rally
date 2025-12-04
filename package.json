@@ -1,0 +1,45 @@
+{
+  "name": "cdk-openapi-express",
+  "version": "0.1.0",
+  "bin": {
+    "cdk-openapi-express": "bin/cdk-openapi-express.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "tsc && npx jest",
+    "env": "yaml-to-environ -i lib/.env.yaml -o api/docker/app.env",
+    "env:richmenu": "yaml-to-environ -i lib/.env.yaml -o richmenu/.env",
+    "cdk": "cdk",
+    "bootstrap": "source .env && cdk -c environment=dev bootstrap --profile $PROFILE",
+    "cdk:dev": "cdk -c environment=dev",
+    "cdk:prod": "cdk -c environment=prod",
+    "cdk:local": "cdk -c environment=local",
+    "deploy:dev": "npm run cdk:dev deploy",
+    "synth:local": "npm run cdk:local synth",
+    "invoke": "npm run synth:local && sam local start-api -t ./cdk.out/RogainingSystemStack-local.template.json --docker-network rogaining_system_backend",
+    "invoke:ins": "./run.sh doc ins && npm run invoke",
+    "fastapi": "./run.sh doc fastapi"
+  },
+  "devDependencies": {
+    "@sion908/yaml-to-environ": "^1.0.8",
+    "@types/jest": "^29.5.3",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node": "^20.4.8",
+    "@types/prettier": "2.7.3",
+    "aws-cdk": "^2.90.0",
+    "esbuild": "^0.18.18",
+    "jest": "^29.6.2",
+    "js-yaml": "^4.1.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.6.2",
+    "typescript": "~5.1.6"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.90.0",
+    "constructs": "^10.2.69",
+    "source-map-support": "^0.5.21",
+    "yaml": "^2.3.1"
+  }
+}

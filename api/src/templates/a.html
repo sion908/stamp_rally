@@ -1,0 +1,214 @@
+<body>
+    <main>
+      <div id="qrCodeContainer"></div>
+      <button id="downloadZip">ZIPをダウンロード</button>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script>
+      const urls = [
+        'https://example.com/url1',
+        'https://example.com/url2',
+        'https://example.com/url3'
+      ];
+
+      function createQRCodeElement(url) {
+        const qrCodeDiv = document.createElement('div');
+        qrCodeDiv.className = 'qr-code';
+        qrCodeDiv.innerHTML = `
+          <img src="https://api.qrserver.com/v1/create-qr-code/?ecc=Q&size=500x500&data=${encodeURIComponent(url)}" alt="QR Code">
+          <div class="outer-circle">
+            <svg viewBox="0 0 100 100">
+              <path d="M 0,50 a 50,50 0 1,1 0,1 z" id="circle" />
+              <text>
+                <textPath xlink:href="#circle">トーマス・ブレーク・グラバーの像 Thomas Blake Glover Statue</textPath>
+              </text>
+            </svg>
+            <div class="inner-circle">
+              <img src="https://res.cloudinary.com/djutwrn9m/image/upload/v1682557120/avator_hq5owd.jpg" alt="">
+            </div>
+          </div>
+        `;
+        return qrCodeDiv;
+      }
+
+      async function createQRCodeImage(qrCodeElement) {
+        return new Promise((resolve, reject) => {
+          console.log("ma1");
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const qrCodeImg = qrCodeElement.querySelector('img');
+          const outerCircle = qrCodeElement.querySelector('.outer-circle');
+          const innerCircle = qrCodeElement.querySelector('.inner-circle');
+
+          canvas.width = qrCodeElement.offsetWidth;
+          canvas.height = qrCodeElement.offsetHeight;
+          console.log("ma2");
+
+          const qrCodeImgPromise = loadImage(qrCodeImg.src);
+          const outerCirclePromise = loadSVGAsImage(outerCircle);
+          const innerCirclePromise = loadSVGAsImage(innerCircle);
+          console.log("ma3");
+
+          Promise.all([qrCodeImgPromise, outerCirclePromise, innerCirclePromise])
+            .then(([qrCodeImg, outerCircleImg, innerCircleImg]) => {
+              console.log("then ma");
+              ctx.drawImage(qrCodeImg, 0, 0, canvas.width, canvas.height);
+              ctx.drawImage(outerCircleImg, 0, 0, canvas.width, canvas.height);
+              ctx.drawImage(innerCircleImg, 0, 0, canvas.width, canvas.height);
+              console.log("ma");
+              canvas.toBlob((blob) => {
+                resolve(blob);
+              }, 'image/png');
+            })
+            .catch((error) => {
+              console.error('Error loading images:', error);
+              reject(error);
+            });
+        });
+      }
+
+      async function downloadZip() {
+        const zip = new JSZip();
+
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          console.log(url)
+          const qrCodeElement = createQRCodeElement(url);
+          document.body.appendChild(qrCodeElement);
+          const blob = await createQRCodeImage(qrCodeElement);
+          zip.file(`qrcode_${i + 1}.png`, blob);
+          document.body.removeChild(qrCodeElement);
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = 'qrcodes.zip';
+        link.click();
+      }
+
+      function loadImage(url) {
+        console.log(url)
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = url;
+        });
+      }
+
+      // function loadSVGAsImage(svgElement) {
+      //   return new Promise((resolve, reject) => {
+      //     const svg = new XMLSerializer().serializeToString(svgElement);
+      //     const encodedData = window.btoa(unescape(encodeURIComponent(svg)));
+      //     const dataURL = `data:image/svg+xml;base64,${encodedData}`;
+      //
+      //     const img = new Image();
+      //     img.onload = () => resolve(img);
+      //     img.onerror = reject;
+      //     img.src = dataURL;
+      //   });
+      // }
+
+      function loadSVGAsImage(svgElement) {
+        console.log(svgElement)
+        return new Promise((resolve, reject) => {
+          const svg = new XMLSerializer().serializeToString(svgElement);
+          const encodedData = window.btoa(unescape(encodeURIComponent(svg)));
+          const dataURL = `data:image/svg+xml;base64,${encodedData}`;
+
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Failed to load SVG as image'));
+          img.src = dataURL;
+        });
+      }
+
+      document.getElementById('downloadZip').addEventListener('click', downloadZip);
+    </script>
+    <style>
+        body {
+            --seal-impression-color: #000000;
+            font-family: 'Yuji Boku', serif;
+          }
+          .qr-code {
+            position: relative;
+            display: inline-block;
+            margin: 20px;
+          }
+
+          .qr-code > img {
+            display: block;
+            position: relative;
+            z-index: 1;
+          }
+
+          .outer-circle::after {
+            content: "";
+            position: absolute;
+            top: 11px;
+            left: 11px;
+            right: 11px;
+            bottom: 11px;
+            border-radius: 75px;
+            border: 2px solid var(--seal-impression-color);
+            z-index: -1;
+          }
+          .outer-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background-color: aliceblue;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 0 5px 5px #f0f0f0;
+            z-index: 10;
+          }
+
+          .outer-circle svg {
+            overflow: visible;
+            width: 118px;
+            height: 118px;
+          }
+
+          .outer-circle path {
+            fill: none;
+          }
+
+          .outer-circle text {
+            fill: var(--seal-impression-color);
+          }
+
+          .inner-circle {
+            border: 1px solid var(--seal-impression-color);
+            border-radius: 50%;
+            width: 113px;
+            height: 113px;
+            display: grid;
+            place-items: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+          }
+
+          .center-write {
+            writing-mode: vertical-rl;
+            font-size: 13.5px;
+            line-height: 11.5px;
+            color: var(--seal-impression-color);
+            margin: 3px 0 0;
+          }
+
+          .inner-circle > img {
+            width: 110px;
+            border-radius: 55px;
+          }
+
+    </style>
+  </body>

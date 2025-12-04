@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {% block head %}
+    {% include 'css/liff_style.html' %}
+    <title>{% block title %}{% endblock %} - ロゲイング</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    {% block initliff %}
+    <script>
+      const liff_init=()=>{
+        liff.init({liffId:'{{ liff_id }}',withLoginOnExternalBrowser:true})
+            .then(()=>{
+                if(!liff.isLoggedIn()){liff.login();}
+              {% block afinitliff %}{% endblock afinitliff %}
+              self.liff=liff;
+            })
+      }
+      {% if not is_local %}
+      window.onload=()=>{
+          liff_init();
+      }
+      {% endif %}
+    </script>
+    {% endblock initliff %}
+    {% endblock head %}
+</head>
+<body>
+    <header>
+  <div class="header_title">
+    <a>{% block header_title %}スタンプラリー{% endblock header_title %}</a>
+  </div>
+
+</header>
+  <div id="content">
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+  </div>
+  <footer>
+      {% block footer %}
+      &copy; Copyright 2024 by 55hubs
+      {% endblock %}
+  </footer>
+</body>
+</html>

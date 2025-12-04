@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>場所一覧</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <style>
+      .fsize{
+        font-size: 24px;
+        text-align: center;
+      }
+      .container {
+        width: 80%;
+        margin: 10% auto 0;
+      }
+      .score-table {
+        width: 80%;
+        margin: 10% auto 0;
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 93%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button[type="submit"]:hover {
+        background-color: #45a049;
+      }
+      .QRcode {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .qr {
+        margin:1%;
+        box-sizing: border-box;
+        width:30%;
+      }
+      .qrImg {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+      }
+      canvas {
+        display: none;
+      }
+    </style>
+</head>
+<body>
+  <div class="container">
+    <div id="transition">
+      <button type="button" class="btn btn-primary btn-lg" onclick="goNextpage('{{ base_url }}admin/scores/');">スコア一覧</button>
+    </div>
+    {# <button id="addRowButton">行を追加</button>
+     <button id="saveButton">データを保存する</button> #}
+    <div id="score-table">
+      <table id="placeTable" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col" style="{visibility: "collapse";}">id</th>
+            <th scope="col">name</th>
+            <th scope="col">altname</th>
+            <th scope="col">score</th>
+            <th scope="col">access</th>
+            <th scope="col">is_active</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for place in places %}
+          <tr>
+            <th scope="row">{{ loop.index }}</th>
+            <td>{{place.id}}</td>
+            <td>{{place.name}}</td>
+            <td>{{place.altname}}</td>
+            <td>{{place.score}}</td>
+            <td>{{place.access}}</td>
+            <td>{{place.is_active}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="QRcode"></div>
+  </div>
+<script>
+  document.getElementById('addRowButton').addEventListener('click', function() {
+    const table = document.getElementById('placeTable');
+    const tbody = table.querySelector('tbody');
+
+    const htmlContent = '<tr class="unregistered-data"><th></th><td></td><td><input type="text" name="name"></td><td><input type="text" name="altname"></td><td><input type="text" name="score"></td><td><input type="text" name="access"></td><td><input type="checkbox" name="is_active"></td></tr>';
+
+    tbody.insertAdjacentHTML('beforeend', htmlContent);
+  });
+  $('#saveButton').on('click', function() {
+    const table = $('#placeTable');
+    const rows = table.find('tbody tr.unregistered-data');
+
+    const data = [];
+
+    rows.each(function() {
+      const nameInput = $(this).find('input[name="name"]');
+      const altnameInput = $(this).find('input[name="altname"]');
+      const scoreInput = $(this).find('input[name="score"]');
+      const accessInput = $(this).find('input[name="access"]');
+      const is_activeInput = $(this).find('input[name="is_active"]');
+
+      const rowData = {
+        name: nameInput.val(),
+        altname: altnameInput.val(),
+        score: parseInt(scoreInput.val()),
+        access: accessInput.val(),
+        is_active: is_activeInput.val()? true: false
+      };
+
+      data.push(rowData);
+    });
+    // this.pdata=data;return
+
+    $.ajax({
+      url: '/places/',
+      method: 'POST',
+      data: JSON.stringify({"places": data}),
+      contentType: 'application/json',
+      success: function(response) {
+        // データの保存が成功した場合の処理
+        alert('データが保存されました。');
+      },
+      error: function(xhr, status, error) {
+        // エラーハンドリング
+        console.error(error);
+        alert('データの保存中にエラーが発生しました。');
+      }
+    });
+  });
+
+  function goNextpage(page){
+    window.location.href = page;
+    return
+    const accessToken = localStorage.getItem('access_token');
+    fetch(page, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    }).then(
+      res => {
+
+      }
+    ).then(
+      data => {
+      //  window.location.href = page;
+      }
+    ).catch(error => {
+      console.error('Error:', error);
+    });
+  }
+</script>
+{% include 'js/generateQR.html' %}
+<script>
+  generateQRs(getTableData("placeTable", "https://liff.line.me/{{ liff_id }}/?ver=logeining&place_id="))
+    .then(content => {
+      // ここで必要な処理を行う
+      // 例えば、生成されたQRコードを表示するなど
+
+      // ダウンロードボタンを作成
+      const downloadButton = document.createElement('button');
+      downloadButton.textContent = 'Download ZIP';
+      downloadButton.addEventListener('click', () => {
+        downloadZip(content);
+      });
+      document.body.appendChild(downloadButton);
+    })
+    .catch(error => {
+      console.error('QRコードの生成中にエラーが発生しました:', error);
+    });
+</script>
+</body>
+</html>

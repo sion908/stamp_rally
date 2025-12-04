@@ -1,0 +1,46 @@
+version: '3'
+services:
+  app:
+    restart: always
+    container_name: rogaining_system_app
+    hostname: sr_server
+    build: .
+    tty: true
+    ports:
+      - ${APP_PORT:-80}:80
+    env_file:
+      - app.env
+    environment:
+      - APP_PORT=${APP_PORT:-80}
+      - DB_PORT=${DB_PORT:-3306}
+    volumes:
+      - ../../api:/api
+    working_dir: /api
+    # command: bash -c "poetry install && /bin/bash"
+    networks:
+      - rogaining_backend
+
+  db:
+    image: mysql:8.0
+    restart: always
+    container_name: rogaining_system_db
+    hostname: sr_db
+    env_file:
+      - mysql/.env
+    ports:
+      - ${DB_PORT:-3306}:3306
+    # データを永続化させる場合
+    volumes:
+      # 初期データを投入するSQLが格納されているdir
+      - ./mysql/mysql_init:/docker-entrypoint-initdb.d
+      # 永続化するときにマウントするdir
+      - ./mysql/mysql_data:/var/lib/mysql
+      # 設定系
+      - ./mysql/conf.d:/etc/mysql/conf.d:sensitive
+    # command: ['mysqld', '--lower_case_table_names=0']
+    networks:
+      - rogaining_backend
+
+networks:
+  rogaining_backend:
+    external: true
